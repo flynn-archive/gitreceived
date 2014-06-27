@@ -18,7 +18,7 @@ import (
 	"sync"
 	"syscall"
 
-	"code.google.com/p/go.crypto/ssh"
+	"github.com/flynn/go-crypto-ssh"
 	"github.com/flynn/go-shlex"
 )
 
@@ -193,7 +193,7 @@ func handleChannel(conn *ssh.ServerConn, newChan ssh.NewChannel) {
 				return
 			}
 			cmdargs[1] = strings.TrimSuffix(strings.TrimPrefix(cmdargs[1], "/"), ".git")
-			if strings.Contains(cmdargs[1], "/") {
+			if strings.Contains(cmdargs[1], "..") {
 				ch.Stderr().Write([]byte("Invalid repo.\n"))
 				return
 			}
@@ -207,6 +207,7 @@ func handleChannel(conn *ssh.ServerConn, newChan ssh.NewChannel) {
 			cmd.Env = append(os.Environ(),
 				"RECEIVE_USER="+conn.User(),
 				"RECEIVE_REPO="+cmdargs[1],
+				"RECEIVE_USER_KEY="+string(bytes.TrimSpace(ssh.MarshalAuthorizedKey(conn.PublicKey()))),
 			)
 			done, err := attachCmd(cmd, ch, ch.Stderr(), ch)
 			if err != nil {
